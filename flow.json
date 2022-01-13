@@ -1,0 +1,84 @@
+{
+	"emulators": {
+		"default": {
+			"port": 3569,
+			"serviceAccount": "emulator-account"
+		}
+	},
+	"contracts": {
+    "NonFungibleToken": {
+      "source": "./cadence/contracts/NonFungibleToken.cdc",
+      "aliases": {
+        "testnet": "0x631e88ae7f1d7c20",
+        "mainnet": "0x1d7e57aa55817448"
+      }
+    },
+    "FungibleToken": {
+      "source": "./cadence/contracts/FungibleToken.cdc",
+      "aliases": {
+        "emulator": "0xee82856bf20e2aa6",
+        "testnet": "0x9a0766d93b6608b7"
+      }
+    },
+    "FUSD": {
+      "source": "./cadence/contracts/FUSD.cdc",
+      "aliases": {
+        "testnet": "0xe223d8a629e49c68"
+      }
+    },
+    "FlowToken": {
+      "source": "./cadence/contracts/FlowToken.cdc",
+      "aliases": {
+        "emulator": "0x0ae53cb6e3f42a79",
+        "testnet": "0x7e60df042a9c0868"
+      }
+    },
+    "CryptoZooNFT": "./cadence/contracts/CryptoZooNFT.cdc",
+    "CryptoZooNFTMinter": "./cadence/contracts/CryptoZooNFTMinter.cdc",
+    "NFTStorefront": "./cadence/contracts/NFTStorefront.cdc",
+    "MetadataViews": "./cadence/contracts/MetadataViews.cdc"
+  },
+	"networks": {
+		"emulator": "127.0.0.1:3569",
+		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"testnet": "access.devnet.nodes.onflow.org:9000"
+	},
+	"accounts": {
+		"emulator-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "bd92caf6b4851ec245f73f49ec7309a8cc89c818f8a6f138b5f6e8cfaf935229"
+		},
+    "testnet-minter": {
+      "address": "0xd60702f03bcafd46",
+			"key": "1df493ab37104528290d52ce546f0f3b31471548291dbd4cb4782f0ab05016ee",
+      "_public": "9543b1a4d76b598e72027c5932d775e2aeb3f951a5fa691fbff94e33546b261195fc476edf34d56d4eda9a066afb5901304ac33e1a12d722621dfc89fdc23a99"
+    },
+    "testnet-mintee": {
+      "address": "0x2841796dead41fe7",
+			"key": "4c7e073b58f420021993613adf1af3914ab83f3a38a8f4db765857203f0a96d6",
+      "_public": "958aa49d9102ec26ae0aec69d978002779bf19c1bc92af8cfe8243c4c78a2a8db2d481922be63314fd4e4314d9295f07ea99dee683106c2270c6fe485862a131"
+    },
+    "mainnet-minter": {
+      "address": "0x8ea44ab931cac762",
+			"key": "a5b442d7a1943ad8011c868d3a4b11a8ec85caba0b481f5e041ab76cceb10a23",
+      "_public": "961b38b7ad2149da25ffc65da5aaa5325b2bef7d3ce420cd84f44888b221d128c994d82bfa919f82933633b6f05b0bfeef614ce91dee82e7fa6d7701ecd68c7d"
+    },
+    "mainnet-mintee": {
+      "address": "0x77bda4ce75b1b3f5",
+      "key": "45cf54bbfa304131c7fc8572f93b87ab8c4f03d3bf1409ae99a3a964663656dc",
+      "_public": "b17cc25bd9380484737eb61815a5c7aca9a3c219f5b6f7884af313cfa64437687e3b318ac4cf1bf4c3cd1d604b39b934fe3b2f44ce6f26934d4ca84d229b1dbd"
+    }
+	},
+	"deployments": {
+    "emulator": {
+      "emulator-account": [
+        "NonFungibleToken", "FungibleToken", "MetadataViews", "CryptoZooNFT", "CryptoZooNFTMinter", "NFTStorefront"
+      ]
+    },
+    "testnet": {
+      "testnet-minter": [
+        "CryptoZooNFT", "CryptoZooNFTMinter", "MetadataViews", "NFTStorefront"
+      ]
+    }
+  }
+}

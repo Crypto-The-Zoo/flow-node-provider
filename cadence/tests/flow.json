@@ -1,0 +1,67 @@
+{
+	"emulators": {
+		"default": {
+			"port": 3569,
+			"serviceAccount": "emulator-account"
+		}
+	},
+	"contracts": {
+    "NonFungibleToken": {
+      "source": "./cadence/contracts/NonFungibleToken.cdc",
+      "aliases": {
+        "testnet": "0x631e88ae7f1d7c20"
+      }
+    },
+    "FungibleToken": {
+      "source": "./cadence/contracts/FungibleToken.cdc",
+      "aliases": {
+        "emulator": "0xee82856bf20e2aa6",
+        "testnet": "0x9a0766d93b6608b7"
+      }
+    },
+    "FUSD": {
+      "source": "./cadence/contracts/FUSD.cdc",
+      "aliases": {
+        "testnet": "0xe223d8a629e49c68"
+      }
+    },
+    "FlowToken": {
+      "source": "./cadence/contracts/FlowToken.cdc",
+      "aliases": {
+        "emulator": "0x0ae53cb6e3f42a79",
+        "testnet": "0x7e60df042a9c0868"
+      }
+    },
+    "CryptoZooNFT": "./cadence/contracts/CryptoZooNFT.cdc",
+    "CryptoZooNFTMinter": "./cadence/contracts/CryptoZooNFTMinter.cdc",
+    "NFTStorefront": "./cadence/contracts/NFTStorefront.cdc"
+  },
+	"networks": {
+		"emulator": "127.0.0.1:3569",
+		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"testnet": "access.devnet.nodes.onflow.org:9000"
+	},
+	"accounts": {
+		"emulator-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "bd92caf6b4851ec245f73f49ec7309a8cc89c818f8a6f138b5f6e8cfaf935229"
+		},
+    "testnet-minter": {
+      "address": "0xacafaf0d1f99a01e",
+			"key": "33ab9199937960e9c1cd204c45604db0d88f86fa438f4d3f049c46f97ce9af50",
+      "_public": "2b566be2f01d684f88e0782cf160dc1e81a843ac6b0e81089e465af5bbfbb7fe909eed04401a34c8a84ab75352d758674b71e8daec01c574117f5760ac657b2b"
+    }
+	},
+	"deployments": {
+    "emulator": {
+      "emulator-account": [
+        "NonFungibleToken", "FungibleToken", "CryptoZooNFT", "CryptoZooNFTMinter", "NFTStorefront"
+      ]
+    },
+    "testnet": {
+      "testnet-minter": [
+        "CryptoZooNFT", "CryptoZooNFTMinter", "NFTStorefront"
+      ]
+    }
+  }
+}
