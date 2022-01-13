@@ -18,7 +18,6 @@ func NewValidator() *validator.Validate {
 		}
 		return false
 	})
-
 	return validate
 }
 

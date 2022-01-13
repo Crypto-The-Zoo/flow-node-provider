@@ -3,12 +3,10 @@ package controllers
 import (
 	"InceptionAnimals/app/models"
 	"InceptionAnimals/platform/database"
-	"os"
 	"time"
 
 	"InceptionAnimals/pkg/utils"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber"
 	"github.com/google/uuid"
 )
@@ -119,47 +117,122 @@ func CreateUser(ctx *fiber.Ctx) {
 	})
 }
 
-func Login(ctx *fiber.Ctx) {
+// func Login(ctx *fiber.Ctx) {
+// 	type request struct {
+// 		Email string `json:"email"`
+// 		Code  string `json:"code"`
+// 	}
+
+// 	var body request
+// 	err := ctx.BodyParser(&body)
+// 	if err != nil {
+// 		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+// 			"error": "failed_to_parse_json",
+// 		})
+// 		return
+// 	}
+
+// 	if body.Email != "alliu930410@gmail.com" || body.Code != "CodeFromDb" {
+// 		ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+// 			"error": "Bad Credentials",
+// 		})
+// 		return
+// 	}
+
+// 	token := jwt.New(jwt.SigningMethodHS256)
+// 	claims := token.Claims.(jwt.MapClaims)
+// 	claims["sub"] = "1"
+// 	claims["exp"] = time.Now().Add(time.Hour * 24 * 7) // valid for a week
+
+// 	s, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+// 	if err != nil {
+// 		ctx.SendStatus(fiber.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+// 		"token": s,
+// 		"user": struct {
+// 			Id    int    `json:"id"`
+// 			Email string `json:"email"`
+// 		}{
+// 			Id:    1,
+// 			Email: "alliu930410@gmail.com",
+// 		},
+// 	})
+// }
+
+func GetLoginCode(ctx *fiber.Ctx) {
+	now := time.Now()
+
+	// Define request struct
 	type request struct {
 		Email string `json:"email"`
-		Code  string `json:"code"`
 	}
 
+	// Parse body from JSON request
 	var body request
 	err := ctx.BodyParser(&body)
 	if err != nil {
 		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "failed_to_parse_json",
+			"error": true,
+			"msg":   err.Error(),
 		})
 		return
 	}
 
-	if body.Email != "alliu930410@gmail.com" || body.Code != "CodeFromDb" {
-		ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Bad Credentials",
-		})
-		return
-	}
+	// TODO: validate email field
+	// if body.Email == nil {
+	// 	ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": true,
+	// 		"msg":   "invalid_email",
+	// 	})
+	// 	return
+	// }
 
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["sub"] = "1"
-	claims["exp"] = time.Now().Add(time.Hour * 24 * 7) // valid for a week
-
-	s, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	// Create database connection
+	db, err := database.OpenDBConnection()
 	if err != nil {
-		ctx.SendStatus(fiber.StatusInternalServerError)
+		// Return status 500 and database connection error
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
 		return
 	}
 
+	// Create User Login Object
+	// duration := 10
+	loginObj := models.LoginObj{
+		Code:      "12345678",
+		CreatedAt: now,
+		// ExpiresAt: now.Add(time.Minute * duration),
+		ExpiresAt: now,
+	}
+
+	user, err := db.GetUserByEmail(body.Email)
+	if err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// CreateLoginCode in database
+	user.LoginObj = loginObj
+	if err := db.CreateLoginCode(&user); err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Return LoginCode
 	ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-		"token": s,
-		"user": struct {
-			Id    int    `json:"id"`
-			Email string `json:"email"`
-		}{
-			Id:    1,
-			Email: "alliu930410@gmail.com",
-		},
+		"error":    false,
+		"msg":      nil,
+		"loginObj": loginObj,
 	})
 }

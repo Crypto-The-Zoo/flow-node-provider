@@ -18,5 +18,5 @@ func UserRoutes(a *fiber.App) {
 
 	// Routes for POST method
 	route.Post("/user/register", controllers.CreateUser)
-	route.Post("/user/login", controllers.Login)
+	route.Post("/user/login", controllers.GetLoginCode)
 }

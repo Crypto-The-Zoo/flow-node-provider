@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +22,24 @@ type User struct {
 }
 
 type LoginObj struct {
-	Code      string `json:"code"`
-	CreatedAt string `json:"created_at"`
-	ExpiresAt string `json:"expires_at"`
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// Value make the LoginObj struct implement the driver.Valuer interface.
+// This method simply returns the JSON-encoded representation of the struct.
+func (l LoginObj) Value() (driver.Value, error) {
+	return json.Marshal(l)
+}
+
+// Scan make the LoginObj struct implement the sql.Scanner interface.
+// This method simply decodes a JSON-encoded value into the struct fields.
+func (l *LoginObj) Scan(value interface{}) error {
+	j, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(j, &l)
 }
