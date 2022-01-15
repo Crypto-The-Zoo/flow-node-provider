@@ -20,6 +20,7 @@ require (
 	github.com/gofiber/fiber v1.14.6 // indirect
 	github.com/gofiber/jwt v0.2.0 // indirect
 	github.com/gofiber/utils v0.0.10 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect

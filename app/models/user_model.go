@@ -21,6 +21,13 @@ type User struct {
 	LoginObj    LoginObj  `db:"login_obj" json:"login_obj"`
 }
 
+type UserPublic struct {
+	ID          uuid.UUID `db:"id" json:"id" validate:"required,uuid"`
+	Username    string    `db:"username" json:"username" validate:"required,lte=255"`
+	Email       string    `db:"email" json:"email" validate:"required,lte=255"`
+	FlowAddress string    `db:"flow_address" json:"flow_address" validate:"lte=255"`
+}
+
 type LoginObj struct {
 	Code      string    `json:"code"`
 	CreatedAt time.Time `json:"created_at"`

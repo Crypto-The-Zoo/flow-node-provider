@@ -3,6 +3,8 @@ package controllers
 import (
 	"InceptionAnimals/app/models"
 	"InceptionAnimals/platform/database"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"InceptionAnimals/pkg/utils"
@@ -32,7 +34,6 @@ func GetUser(ctx *fiber.Ctx) {
 	}
 
 	// Get user by id
-	// TODO: get user by jwt token
 	user, err := db.GetUser(id)
 	if err != nil {
 		// Return, if user not found
@@ -49,14 +50,9 @@ func GetUser(ctx *fiber.Ctx) {
 		"msg":   nil,
 		"user":  user,
 	})
-
-	// user := ctx.Locals("user").(*jwt.Token)
-	// claims := user.Claims.(jwt.MapClaims)
-	// id := claims["sub"].(string)
-	// ctx.Send(fmt.Sprintf("Sanity Check: id %s", id))
 }
 
-func CreateUser(ctx *fiber.Ctx) {
+func Register(ctx *fiber.Ctx) {
 
 	// Create new User struct
 	user := &models.User{}
@@ -100,6 +96,62 @@ func CreateUser(ctx *fiber.Ctx) {
 		return
 	}
 
+	// Check if email is taken in database
+	existingEmailUser, err := db.GetUserByEmail(user.Email)
+	if err == nil {
+		if existingEmailUser.IsActive {
+			// Return, if some fields are not valid.
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": true,
+				"msg":   "email_taken",
+			})
+			return
+		}
+	}
+
+	// Check if username is taken in database
+	existingUsernameUser, err := db.GetUserByUsername(user.Username)
+	if err == nil {
+		if existingUsernameUser.IsActive {
+			// Return, if some fields are not valid.
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": true,
+				"msg":   "username_taken",
+			})
+			return
+		}
+	}
+
+	// Delete inactive user records if there is any
+	if existingEmailUser.LoginObj.Code != "" {
+		if err := db.DeleteInactiveUser(user); err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": true,
+				"msg":   err.Error(),
+			})
+			return
+		}
+	}
+	if existingUsernameUser.LoginObj.Code != "" {
+		if err := db.DeleteInactiveUser(user); err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": true,
+				"msg":   err.Error(),
+			})
+			return
+		}
+	}
+
+	// Create User Login Object, valid for 30 minutes
+	now := time.Now()
+	duration := 30
+	code := fmt.Sprintf("%d%d%d%d%d%d%d%d", rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9))
+	user.LoginObj = models.LoginObj{
+		Code:      code,
+		CreatedAt: now,
+		ExpiresAt: now.Add(time.Minute * time.Duration(duration)),
+	}
+
 	// Create user in database
 	if err := db.CreateUser(user); err != nil {
 		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -117,57 +169,147 @@ func CreateUser(ctx *fiber.Ctx) {
 	})
 }
 
-// func Login(ctx *fiber.Ctx) {
-// 	type request struct {
-// 		Email string `json:"email"`
-// 		Code  string `json:"code"`
-// 	}
+func Login(ctx *fiber.Ctx) {
+	type request struct {
+		Email string `json:"email" validate:"required,min=3,max=32"`
+		Code  string `json:"code" validate:"required,min=3,max=32"`
+	}
 
-// 	var body request
-// 	err := ctx.BodyParser(&body)
-// 	if err != nil {
-// 		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "failed_to_parse_json",
-// 		})
-// 		return
-// 	}
+	var body request
+	if err := ctx.BodyParser(&body); err != nil {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "failed_to_parse_json",
+		})
+		return
+	}
 
-// 	if body.Email != "alliu930410@gmail.com" || body.Code != "CodeFromDb" {
-// 		ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-// 			"error": "Bad Credentials",
-// 		})
-// 		return
-// 	}
+	// Create a new validator for a request model
+	validate := utils.NewValidator()
+	// Validate request fields
+	if err := validate.Struct(body); err != nil {
+		// Return, if some fields are not valid.
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
+		})
+		return
+	}
 
-// 	token := jwt.New(jwt.SigningMethodHS256)
-// 	claims := token.Claims.(jwt.MapClaims)
-// 	claims["sub"] = "1"
-// 	claims["exp"] = time.Now().Add(time.Hour * 24 * 7) // valid for a week
+	// Create database connection
+	db, err := database.OpenDBConnection()
+	if err != nil {
+		// Return status 500 and database connection error
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
 
-// 	s, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
-// 	if err != nil {
-// 		ctx.SendStatus(fiber.StatusInternalServerError)
-// 		return
-// 	}
+	// Get user object loginObj
+	user, err := db.GetUserByEmail(body.Email)
+	if err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
 
-// 	ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-// 		"token": s,
-// 		"user": struct {
-// 			Id    int    `json:"id"`
-// 			Email string `json:"email"`
-// 		}{
-// 			Id:    1,
-// 			Email: "alliu930410@gmail.com",
-// 		},
-// 	})
-// }
+	// Validate login code
+	if user.LoginObj.Code == "" {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   "code_not_initialized",
+		})
+		return
+	}
+	if body.Code != user.LoginObj.Code {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   "invalid_code",
+		})
+		return
+	}
+	if now := time.Now().Unix(); now > user.LoginObj.ExpiresAt.Unix() {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   "code_expired",
+		})
+		return
+	}
+
+	// Invalidate login code
+	if err := db.DeleteLoginCode(body.Email); err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+	user.LoginObj = models.LoginObj{}
+
+	// Delete user login code in database
+	if err := db.DeleteLoginCode(body.Email); err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Activate user if active field is false
+	if !user.IsActive {
+		if err := db.ActivateUser(body.Email); err != nil {
+			ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": true,
+				"msg":   err.Error(),
+			})
+			return
+		}
+	}
+
+	if err := db.DeleteLoginCode(body.Email); err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Generate new access token for user
+	userPublic, err := db.GetUserPublicByEmail(body.Email)
+	if err != nil {
+		// Return status 500 and token generation error.
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	token, err := utils.GenerateNewAccessToken(&userPublic)
+	if err != nil {
+		// Return status 500 and token generation error.
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Return access token
+	ctx.JSON(fiber.Map{
+		"error": false,
+		"msg":   nil,
+		"token": token,
+	})
+}
 
 func GetLoginCode(ctx *fiber.Ctx) {
 	now := time.Now()
 
 	// Define request struct
 	type request struct {
-		Email string `json:"email"`
+		Email string `json:"email" validate:"required,email,min=6,max=32"`
 	}
 
 	// Parse body from JSON request
@@ -181,14 +323,17 @@ func GetLoginCode(ctx *fiber.Ctx) {
 		return
 	}
 
-	// TODO: validate email field
-	// if body.Email == nil {
-	// 	ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-	// 		"error": true,
-	// 		"msg":   "invalid_email",
-	// 	})
-	// 	return
-	// }
+	// Create a new validator for a request model
+	validate := utils.NewValidator()
+	// Validate request fields
+	if err := validate.Struct(body); err != nil {
+		// Return, if some fields are not valid.
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
+		})
+		return
+	}
 
 	// Create database connection
 	db, err := database.OpenDBConnection()
@@ -201,13 +346,31 @@ func GetLoginCode(ctx *fiber.Ctx) {
 		return
 	}
 
-	// Create User Login Object
-	// duration := 10
+	// check last loginObj
+	lastLoginObj, err := db.GetLoginCode(body.Email)
+	if err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+	fmt.Println(lastLoginObj)
+	if lastLoginObj.Code != "" && lastLoginObj.CreatedAt.Add(time.Minute).Unix() > now.Unix() {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   "retry_too_frequent",
+		})
+		return
+	}
+
+	// Create User Login Object, valid for 30 minutes
+	duration := 30
+	code := fmt.Sprintf("%d%d%d%d%d%d%d%d", rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9), rand.Intn(9))
 	loginObj := models.LoginObj{
-		Code:      "12345678",
+		Code:      code,
 		CreatedAt: now,
-		// ExpiresAt: now.Add(time.Minute * duration),
-		ExpiresAt: now,
+		ExpiresAt: now.Add(time.Minute * time.Duration(duration)),
 	}
 
 	user, err := db.GetUserByEmail(body.Email)
