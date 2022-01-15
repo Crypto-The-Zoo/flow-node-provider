@@ -145,6 +145,15 @@ func Register(ctx *fiber.Ctx) error {
 		ExpiresAt: now.Add(time.Minute * time.Duration(duration)),
 	}
 
+	// Send user the login code
+	// Risk: not capturing error with mailgun
+	if err := utils.SendLoginCode(user.Email, code); err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
 	// Create user in database
 	if err := db.CreateUser(user); err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
