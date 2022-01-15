@@ -4,6 +4,7 @@ APP_NAME = apiserver
 BUILD_DIR = $(PWD)/build
 MIGRATIONS_FOLDER = $(PWD)/platform/migrations
 DATABASE_URL = postgres://postgres:password@localhost/inception?sslmode=disable
+STAGING_DATABASE_PROXY_URL = postgres://postgres:ND88Kdssu9dDE0lo@localhost:5544/inception-staging?sslmode=disable
 
 clean:
 	rm -rf ./build
@@ -70,3 +71,12 @@ swag:
 
 deploy.staging:
 	gcloud beta run deploy api-staging --set-env-vars='ENV=staging' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging
+
+db.socket.staging:
+	./bin/cloud_sql_proxy -instances=crypto-the-zoo-staging:us-west1:inception-db=tcp:5544
+
+migrate.staging.up:
+	migrate -path $(MIGRATIONS_FOLDER) -database "$(STAGING_DATABASE_PROXY_URL)" up
+	
+migrate.staging.down:
+	migrate -path $(MIGRATIONS_FOLDER) -database "$(STAGING_DATABASE_PROXY_URL)" down
