@@ -22,7 +22,9 @@ func GenerateNewAccessToken(user *models.UserPublic) (string, error) {
 
 	// Set public claims:
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(daysCount*24)).Unix()
-	claims["user"] = user
+	claims["id"] = user.ID
+	claims["email"] = user.Email
+	claims["flow_address"] = user.FlowAddress
 
 	// TODO: add user information to JWT token
 

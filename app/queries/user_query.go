@@ -64,6 +64,24 @@ func (q *UserQueries) GetUserByUsername(username string) (models.User, error) {
 	return user, nil
 }
 
+func (q *UserQueries) GetUserByFlowAddress(flowAddress string) (models.User, error) {
+	// Define user variable
+	user := models.User{}
+
+	// Define query string
+	query := `SELECT * FROM users WHERE flow_address = $1 LIMIT 1`
+
+	// Send query to database
+	err := q.Get(&user, query, flowAddress)
+	if err != nil {
+		// Return empty object and error
+		return user, err
+	}
+
+	// Return query result
+	return user, nil
+}
+
 func (q *UserQueries) GetUserPublicByEmail(email string) (models.UserPublic, error) {
 	// Define user variable
 	userPublic := models.UserPublic{}
@@ -152,6 +170,17 @@ func (q *UserQueries) DeleteInactiveUser(user *models.User) error {
 	query := `DELETE from users where email = $1 OR username= $2 AND is_active=false`
 
 	_, err := q.Exec(query, user.Email, user.Username)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (q *UserQueries) AddFlowAddressToUser(email string, flowAddress string) error {
+	query := `UPDATE users SET flow_address = $1 WHERE email = $2`
+
+	_, err := q.Exec(query, flowAddress, email)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"InceptionAnimals/app/controllers"
+	"InceptionAnimals/pkg/middleware"
 
 	"github.com/gofiber/fiber"
 )
@@ -17,6 +18,9 @@ func UserRoutes(a *fiber.App) {
 	// Routes for POST method
 	route.Post("/user/register", controllers.Register)
 	route.Post("/user/login", controllers.Login)
+
+	// Routes for PUT method
+	route.Put("/user/flow-address", middleware.JWTProtected(), controllers.AddFlowAddress)
 
 	// Deprecated:
 	// route.Post("/user/code", controllers.GetLoginCode)

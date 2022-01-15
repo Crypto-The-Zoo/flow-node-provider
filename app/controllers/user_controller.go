@@ -304,6 +304,126 @@ func Login(ctx *fiber.Ctx) {
 	})
 }
 
+func AddFlowAddress(ctx *fiber.Ctx) {
+	now := time.Now().Unix()
+
+	type request struct {
+		FlowAddress string `json:"flowAddress" validate:"required,len=18"`
+	}
+
+	// Parse body from JSON request
+	var body request
+	err := ctx.BodyParser(&body)
+	if err != nil {
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Create a new validator for a request model
+	validate := utils.NewValidator()
+	// Validate request fields
+	if err := validate.Struct(body); err != nil {
+		// Return, if some fields are not valid.
+		ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
+		})
+		return
+	}
+
+	// Get claims from JWT
+	claims, err := utils.ExtractTokenMetadata(ctx)
+	if err != nil {
+		// Return status 500 and JWT parse error.
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Set expiration time from JWT data of current book.
+	expires := claims.Expires
+
+	// Checking, if now time greather than expiration from JWT.
+	if now > expires {
+		// Return status 401 and unauthorized error message.
+		ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": true,
+			"msg":   "unauthorized, check expiration time of your token",
+		})
+		return
+	}
+
+	// Create database connection
+	db, err := database.OpenDBConnection()
+	if err != nil {
+		// Return status 500 and database connection error
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	// Check if user has already has wallet registered
+	emailUser, err := db.GetUserByEmail(claims.Email)
+	if err == nil {
+		if emailUser.FlowAddress != "" && emailUser.FlowAddress == body.FlowAddress {
+			// silent return 200
+			ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+				"error": false,
+				"msg":   "wallet_already_registered",
+			})
+			return
+		}
+		if emailUser.FlowAddress != "" && emailUser.FlowAddress != body.FlowAddress {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": true,
+				"msg":   "different_wallet_registered",
+			})
+			return
+		}
+	}
+
+	// Check if wallet has already been registered by user
+	walletUser, err := db.GetUserByFlowAddress(body.FlowAddress)
+	if err == nil {
+		if walletUser.Email == claims.Email {
+			// silent return 200
+			ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+				"error": false,
+				"msg":   "wallet_already_registered",
+			})
+			return
+		}
+		if walletUser.Email != claims.Email {
+			ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": true,
+				"msg":   "wallet_already_registered_by_another_user",
+			})
+			return
+		}
+	}
+
+	// Register wallet with user in database
+	if err := db.AddFlowAddressToUser(claims.Email, body.FlowAddress); err != nil {
+		ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+
+	ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"error": false,
+		"msg":   nil,
+	})
+}
+
 func GetLoginCode(ctx *fiber.Ctx) {
 	now := time.Now()
 
