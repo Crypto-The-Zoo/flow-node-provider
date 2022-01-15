@@ -4,7 +4,7 @@ import (
 	"InceptionAnimals/app/controllers"
 	"InceptionAnimals/pkg/middleware"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 )
 
 // UserRoutes func for describe group of user routes.
