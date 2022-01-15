@@ -67,3 +67,6 @@ docker.stop.postgres:
 
 swag:
 	swag init
+
+deploy.staging:
+	gcloud beta run deploy api-staging --set-env-vars='ENV=staging' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging

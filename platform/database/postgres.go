@@ -11,6 +11,8 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib" // load pgx driver for PostgreSQL
 )
 
+// https://cloud.google.com/sql/docs/postgres/connect-run#go
+
 // PostgreSQLConnection func for connection to PostgreSQL database.
 func PostgreSQLConnection() (*sqlx.DB, error) {
 	// Define database connection settings.
