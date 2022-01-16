@@ -11,14 +11,14 @@ import (
 
 // User struct to describe user object.
 type User struct {
-	ID          uuid.UUID `db:"id" json:"id" validate:"required,uuid"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
-	Username    string    `db:"username" json:"username" validate:"required,lte=255"`
-	Email       string    `db:"email" json:"email" validate:"required,lte=255"`
-	FlowAddress string    `db:"flow_address" json:"flow_address" validate:"lte=255"`
-	IsActive    bool      `db:"is_active" json:"is_active"`
-	LoginObj    LoginObj  `db:"login_obj" json:"login_obj"`
+	ID          uuid.UUID  `db:"id" json:"id" validate:"required,uuid"`
+	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
+	Username    string     `db:"username" json:"username" validate:"required,lte=255"`
+	Email       string     `db:"email" json:"email" validate:"required,lte=255"`
+	FlowAddress NullString `db:"flow_address" json:"flow_address" validate:"lte=255"`
+	IsActive    bool       `db:"is_active" json:"is_active"`
+	LoginObj    LoginObj   `db:"login_obj" json:"login_obj"`
 }
 
 type UserPublic struct {
@@ -49,4 +49,26 @@ func (l *LoginObj) Scan(value interface{}) error {
 	}
 
 	return json.Unmarshal(j, &l)
+}
+
+type NullString string
+
+func (s *NullString) Scan(value interface{}) error {
+	if value == nil {
+		*s = ""
+		return nil
+	}
+	strVal, ok := value.(string)
+	if !ok {
+		return errors.New("column_is_not_string")
+	}
+	*s = NullString(strVal)
+	return nil
+}
+
+func (s NullString) Value() (driver.Value, error) {
+	if len(s) == 0 { // if nil or empty string
+		return nil, nil
+	}
+	return string(s), nil
 }

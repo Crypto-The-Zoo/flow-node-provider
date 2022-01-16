@@ -356,14 +356,14 @@ func AddFlowAddress(ctx *fiber.Ctx) error {
 	// Check if user has already has wallet registered
 	emailUser, err := db.GetUserByEmail(claims.Email)
 	if err == nil {
-		if emailUser.FlowAddress != "" && emailUser.FlowAddress == body.FlowAddress {
+		if emailUser.FlowAddress != "" && string(emailUser.FlowAddress) == body.FlowAddress {
 			// silent return 200
 			return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
 				"error": false,
 				"msg":   "wallet_already_registered",
 			})
 		}
-		if emailUser.FlowAddress != "" && emailUser.FlowAddress != body.FlowAddress {
+		if emailUser.FlowAddress != "" && string(emailUser.FlowAddress) != body.FlowAddress {
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": true,
 				"msg":   "different_wallet_registered",

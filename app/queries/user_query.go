@@ -106,7 +106,7 @@ func (q *UserQueries) CreateUser(user *models.User) error {
 	query := `INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	// Send query to database
-	_, err := q.Exec(query, user.ID, user.CreatedAt, user.UpdatedAt, user.Username, user.Email, user.FlowAddress, false, user.LoginObj)
+	_, err := q.Exec(query, user.ID, user.CreatedAt, user.UpdatedAt, user.Username, user.Email, nil, false, user.LoginObj)
 	if err != nil {
 		return err
 	}
