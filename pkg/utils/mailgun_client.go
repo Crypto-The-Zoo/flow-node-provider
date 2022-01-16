@@ -22,7 +22,7 @@ func SendLoginCode(recipient string, code string) error {
 	// Create an instance of the Mailgun Client
 	mg := mailgun.NewMailgun(yourDomain, privateAPIKey)
 
-	sender := fmt.Sprintf("bot@%s", yourDomain)
+	sender := fmt.Sprintf("Inception Animals <bot@%s>", yourDomain)
 	subject := "Your Inception Animals Login Code"
 	body := ""
 
