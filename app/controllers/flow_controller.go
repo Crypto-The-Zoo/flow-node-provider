@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"InceptionAnimals/app/models"
 	"InceptionAnimals/pkg/utils"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -23,25 +25,42 @@ func GetLatestBlock(ctx *fiber.Ctx) error {
 	})
 }
 
-// func CreateNftTemplate(ctx *fiber.Ctx) error {
+func CreateNftTemplate(ctx *fiber.Ctx) error {
 
-// 	scriptName := "checkIsTemplateMinted"
+	template := models.NFTTemplate{}
+	if err := ctx.BodyParser(&template); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "failed_to_parse_json",
+		})
+	}
 
-// 	scriptRes, err := utils.ExecuteScript(scriptName)
-// 	if err != nil {
-// 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": false,
-// 			"msg":   err.Error(),
-// 		})
-// 	}
+	validate := utils.NewValidator()
+	// Validate user fields
+	if err := validate.Struct(template); err != nil {
+		// Return, if some fields are not valid.
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
+		})
+	}
 
-// 	// Return status 200 OK
-// 	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
-// 		"error": false,
-// 		"msg":   nil,
-// 		"data":  scriptRes,
-// 	})
-// }
+	fmt.Printf("%+v\n", template)
+
+	txRes, err := utils.CreateNftTemplate(template)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": false,
+			"msg":   err.Error(),
+		})
+	}
+
+	// Return status 200 OK
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"error": false,
+		"msg":   nil,
+		"data":  txRes,
+	})
+}
 
 func CheckIfTemplateIsMinted(ctx *fiber.Ctx) error {
 	type request struct {
@@ -52,6 +71,16 @@ func CheckIfTemplateIsMinted(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&body); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "failed_to_parse_json",
+		})
+	}
+
+	validate := utils.NewValidator()
+	// Validate user fields
+	if err := validate.Struct(body); err != nil {
+		// Return, if some fields are not valid.
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
 		})
 	}
 

@@ -5,8 +5,7 @@ transaction(typeID: UInt64, isPack: Bool, name: String, description: String, min
   let admin: &CryptoZooNFT.Admin
 
   prepare(signer: AuthAccount) {
-    self.admin = signer.borrow<&CryptoZooNFT.Admin>(from: CryptoZooNFT.AdminStoragePath)
-      ?? panic("Could not borrow a reference to the CryptoZooNFT Admin")
+    self.admin = signer.borrow<&CryptoZooNFT.Admin>(from: CryptoZooNFT.AdminStoragePath)!
   }
 
   execute {

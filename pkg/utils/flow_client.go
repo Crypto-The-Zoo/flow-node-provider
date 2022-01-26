@@ -7,9 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/onflow/cadence"
+	"github.com/onflow/flow-go-sdk"
 	"github.com/onflow/flow-go-sdk/client"
+	"github.com/onflow/flow-go-sdk/crypto"
 	"google.golang.org/grpc"
 )
 
@@ -22,6 +25,12 @@ func ConnectToFlowAccessAPI() (*client.Client, error) {
 	}
 
 	return flow, nil
+}
+
+func GetReferenceBlockId(flowClient *client.Client) flow.Identifier {
+	block, _ := flowClient.GetLatestBlock(context.Background(), true)
+
+	return block.ID
 }
 
 func GetLatestBlock() (*models.Block, error) {
@@ -71,14 +80,126 @@ func ExecuteScript(scriptName string, args []cadence.Value) (cadence.Value, erro
 
 	scriptStr := MutateScriptAddress(string(script))
 
-	println(scriptStr)
-
 	value, err := flowClient.ExecuteScriptAtLatestBlock(ctx, []byte(scriptStr), args)
 	if err != nil {
 		return nil, err
 	}
 
 	return value, nil
+}
+
+func ServiceAccount(flowClient *client.Client) (flow.Address, *flow.AccountKey, crypto.Signer) {
+	privateKey, _ := crypto.DecodePrivateKeyHex(crypto.ECDSA_P256, os.Getenv("MINTER_PRIVATE_KEY"))
+
+	addr := flow.HexToAddress(os.Getenv("MINTER_ADDRESS"))
+	acc, _ := flowClient.GetAccount(context.Background(), addr)
+
+	// minterKeyIndex := int(os.Getenv("MINTER_KEY_INDEX"))
+	accountKey := acc.Keys[0]
+	signer := crypto.NewInMemorySigner(privateKey, accountKey.HashAlgo)
+
+	return addr, accountKey, signer
+}
+
+func sendTransaction(scriptName string, args []cadence.Value) (*flow.TransactionResult, error) {
+	ctx := context.Background()
+
+	// Initialize Flow Client
+	flowClient, err := ConnectToFlowAccessAPI()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err := flowClient.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	// Parse transaction script
+	script, err := ioutil.ReadFile("cadence/transactions/CryptoZoo/" + scriptName + ".cdc")
+	if err != nil {
+		return nil, err
+	}
+	scriptStr := MutateScriptAddress(string(script))
+
+	// Get service account
+	serviceAcctAddr, serviceAcctKey, serviceSigner := ServiceAccount(flowClient)
+
+	// Build and sign transaction
+	tx := flow.NewTransaction().
+		SetPayer(serviceAcctAddr).
+		SetProposalKey(serviceAcctAddr, serviceAcctKey.Index, serviceAcctKey.SequenceNumber).
+		SetScript([]byte(scriptStr)).
+		SetReferenceBlockID(GetReferenceBlockId(flowClient)).
+		AddAuthorizer(serviceAcctAddr)
+
+	for _, argument := range args {
+		tx.AddArgument(argument)
+	}
+
+	err = tx.SignEnvelope(serviceAcctAddr, serviceAcctKey.Index, serviceSigner)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send transaction
+	err = flowClient.SendTransaction(ctx, *tx)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("ID: %s", tx.ID())
+
+	txResult, err := WaitForSeal(ctx, flowClient, tx.ID())
+	if err != nil {
+		return nil, err
+	}
+
+	return txResult, nil
+}
+
+func first(n cadence.Value, _ error) cadence.Value {
+	return n
+}
+
+func CreateNftTemplate(template models.NFTTemplate) (*flow.TransactionResult, error) {
+
+	// TODO: check if template is minted
+	templateIsMinted, err := CheckIfTemplateIsMinted(uint64(template.TypeID))
+	if err != nil {
+		return nil, err
+	}
+	if templateIsMinted == cadence.NewBool(false) {
+		return &flow.TransactionResult{}, nil
+	}
+
+	args := []cadence.Value{
+		cadence.NewUInt64(uint64(template.TypeID)),
+		cadence.NewBool(template.IsPack),
+		first(cadence.NewString(template.Name)),
+		first(cadence.NewString(template.Description)),
+		cadence.NewUInt64(uint64(template.MintLimit)),
+		first(cadence.NewUFix64(template.PriceUSD)),
+		first(cadence.NewUFix64(template.PriceFlow)),
+		cadence.NewDictionary([]cadence.KeyValuePair{
+			{Key: first(cadence.NewString("uri")), Value: first(cadence.NewString(template.Metadata.Uri))},
+			{Key: first(cadence.NewString("mimetype")), Value: first(cadence.NewString(template.Metadata.Mimetype))},
+			{Key: first(cadence.NewString("quality")), Value: first(cadence.NewString(template.Metadata.Quality))},
+		}),
+		cadence.NewDictionary([]cadence.KeyValuePair{
+			{Key: first(cadence.NewString("availableAt")), Value: first(cadence.NewUFix64(fmt.Sprintf("%d", template.Timestamps.AvailableAt.Unix())))},
+			{Key: first(cadence.NewString("expiresAt")), Value: first(cadence.NewUFix64(fmt.Sprintf("%d", template.Timestamps.ExpiresAt.Unix())))},
+		}),
+		cadence.NewBool(template.IsLand),
+	}
+
+	txResult, err := sendTransaction("create_nft_template", args)
+	if err != nil {
+		return nil, err
+	}
+
+	return txResult, nil
 }
 
 func CheckIfTemplateIsMinted(typeID uint64) (cadence.Value, error) {
@@ -91,4 +212,23 @@ func CheckIfTemplateIsMinted(typeID uint64) (cadence.Value, error) {
 	}
 
 	return scriptRes, nil
+}
+
+// WaitForSeal wait fot the process to seal
+func WaitForSeal(ctx context.Context, c *client.Client, id flow.Identifier) (*flow.TransactionResult, error) {
+	result, err := c.GetTransactionResult(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for result.Status != flow.TransactionStatusSealed {
+		time.Sleep(time.Second)
+		//fmt.Print(".")
+		result, err = c.GetTransactionResult(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
