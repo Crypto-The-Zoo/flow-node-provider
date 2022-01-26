@@ -88,9 +88,7 @@ func CheckIfTemplateIsMinted(ctx *fiber.Ctx) error {
 	}
 
 	validate := utils.NewValidator()
-	// Validate user fields
 	if err := validate.Struct(body); err != nil {
-		// Return, if some fields are not valid.
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": true,
 			"msg":   utils.ValidatorErrors(err),
@@ -111,4 +109,52 @@ func CheckIfTemplateIsMinted(ctx *fiber.Ctx) error {
 		"msg":   nil,
 		"data":  scriptRes,
 	})
+}
+
+func MintNFT(ctx *fiber.Ctx) error {
+	var body models.MintNFTRequest
+	if err := ctx.BodyParser(&body); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "failed_to_parse_json",
+		})
+	}
+
+	validate := utils.NewValidator()
+	if err := validate.Struct(body); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": true,
+			"msg":   utils.ValidatorErrors(err),
+		})
+	}
+
+	// Get claims from JWT
+	claims, err := utils.ExtractTokenMetadata(ctx)
+	if err != nil {
+		// Return status 500 and JWT parse error.
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	if claims.Email != "alliu930410@gmail.com" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": true,
+			"msg":   "admin_required",
+		})
+	}
+
+	txRes, err := utils.MintNFT(body.TypeID, body.Address)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"error": false,
+		"msg":   nil,
+		"data":  txRes,
+	})
+
 }

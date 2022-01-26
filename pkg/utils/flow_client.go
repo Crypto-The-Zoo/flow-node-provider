@@ -73,6 +73,12 @@ func ExecuteScript(scriptName string, args []cadence.Value) (cadence.Value, erro
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		err := flowClient.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	script, err := ioutil.ReadFile("cadence/scripts/CryptoZoo/" + scriptName + ".cdc")
 	if err != nil {
@@ -166,7 +172,6 @@ func first(n cadence.Value, _ error) cadence.Value {
 
 func CreateNftTemplate(template models.NFTTemplate) (*flow.TransactionResult, error) {
 
-	// TODO: check if template is minted
 	templateIsMinted, err := CheckIfTemplateIsMinted(uint64(template.TypeID))
 	if err != nil {
 		return nil, err
@@ -213,6 +218,40 @@ func CheckIfTemplateIsMinted(typeID uint64) (cadence.Value, error) {
 	}
 
 	return scriptRes, nil
+}
+
+func CheckIfAddressHasCollection(address string) (cadence.Value, error) {
+	scriptName := "check_address_has_collection"
+	args := []cadence.Value{cadence.NewAddress(flow.HexToAddress(address))}
+
+	scriptRes, err := ExecuteScript(scriptName, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return scriptRes, nil
+}
+
+func MintNFT(typeID int, address string) (*flow.TransactionResult, error) {
+	addressHasCollection, err := CheckIfAddressHasCollection(address)
+	if err != nil {
+		return nil, err
+	}
+	if addressHasCollection == cadence.NewBool(false) {
+		return nil, errors.New("missing_collection")
+	}
+
+	args := []cadence.Value{
+		cadence.NewAddress(flow.HexToAddress(address)),
+		cadence.NewUInt64(uint64(typeID)),
+	}
+
+	txResult, err := sendTransaction("mint_crypto_zoo_nft", args)
+	if err != nil {
+		return nil, err
+	}
+
+	return txResult, nil
 }
 
 // WaitForSeal wait fot the process to seal

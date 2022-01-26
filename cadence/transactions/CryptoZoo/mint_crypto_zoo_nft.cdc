@@ -7,8 +7,7 @@ transaction(recipient: Address, typeID: UInt64) {
 
     prepare(signer: AuthAccount) {
 
-      self.admin = signer.borrow<&CryptoZooNFT.Admin>(from: CryptoZooNFT.AdminStoragePath)
-        ?? panic("Could not borrow a reference to the Admin")
+      self.admin = signer.borrow<&CryptoZooNFT.Admin>(from: CryptoZooNFT.AdminStoragePath)!
     }
 
     execute {
@@ -16,8 +15,7 @@ transaction(recipient: Address, typeID: UInt64) {
 
         let receiver = recipient
             .getCapability(CryptoZooNFT.CollectionPublicPath)!
-            .borrow<&{NonFungibleToken.CollectionPublic}>()
-            ?? panic("Could not get receiver reference to the NFT Collection")
+            .borrow<&{NonFungibleToken.CollectionPublic}>()!
 
         self.admin.mintNFT(recipient: receiver, typeID: typeID)
     }

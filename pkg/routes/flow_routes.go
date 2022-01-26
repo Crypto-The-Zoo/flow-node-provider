@@ -16,5 +16,5 @@ func FlowRoutes(a *fiber.App) {
 
 	route.Post("/flow/template", middleware.JWTProtected(), controllers.CheckIfTemplateIsMinted)
 	route.Post("/flow/create-template", middleware.JWTProtected(), controllers.CreateNftTemplate)
-
+	route.Post("/flow/mint-nft", middleware.JWTProtected(), controllers.MintNFT)
 }

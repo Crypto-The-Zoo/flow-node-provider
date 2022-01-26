@@ -31,3 +31,8 @@ type Timestamps struct {
 	AvailableAt time.Time `json:"availableAt" validate:"required"`
 	ExpiresAt   time.Time `json:"expiresAt" validate:"required"`
 }
+
+type MintNFTRequest struct {
+	TypeID  int    `json:"typeID" validate:"required"`
+	Address string `json:"Address" validate:"required"`
+}
