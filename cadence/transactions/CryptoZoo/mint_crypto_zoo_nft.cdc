@@ -1,5 +1,3 @@
-// flow transactions send ./cadence/transactions/CryptoZoo/mint_crypto_zoo_nft.cdc 0x2841796dead41fe7 1  --network testnet --signer testnet-minter
-
 import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
 import CryptoZooNFT from "../../contracts/CryptoZooNFT.cdc"
 
