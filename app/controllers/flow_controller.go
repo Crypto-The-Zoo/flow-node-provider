@@ -35,16 +35,29 @@ func CreateNftTemplate(ctx *fiber.Ctx) error {
 	}
 
 	validate := utils.NewValidator()
-	// Validate user fields
 	if err := validate.Struct(template); err != nil {
-		// Return, if some fields are not valid.
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": true,
 			"msg":   utils.ValidatorErrors(err),
 		})
 	}
+	fmt.Printf("--Template: %+v\n", template)
 
-	fmt.Printf("%+v\n", template)
+	// Get claims from JWT
+	claims, err := utils.ExtractTokenMetadata(ctx)
+	if err != nil {
+		// Return status 500 and JWT parse error.
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+	if claims.Email != "alliu930410@gmail.com" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": true,
+			"msg":   "admin_required",
+		})
+	}
 
 	txRes, err := utils.CreateNftTemplate(template)
 	if err != nil {

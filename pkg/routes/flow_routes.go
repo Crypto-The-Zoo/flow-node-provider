@@ -2,6 +2,7 @@ package routes
 
 import (
 	"InceptionAnimals/app/controllers"
+	"InceptionAnimals/pkg/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,7 +14,7 @@ func FlowRoutes(a *fiber.App) {
 
 	route.Get("/flow/block", controllers.GetLatestBlock)
 
-	route.Post("/flow/template", controllers.CheckIfTemplateIsMinted)
-	route.Post("/flow/create-template", controllers.CreateNftTemplate)
+	route.Post("/flow/template", middleware.JWTProtected(), controllers.CheckIfTemplateIsMinted)
+	route.Post("/flow/create-template", middleware.JWTProtected(), controllers.CreateNftTemplate)
 
 }

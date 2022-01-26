@@ -3,6 +3,7 @@ package utils
 import (
 	"InceptionAnimals/app/models"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -149,7 +150,7 @@ func sendTransaction(scriptName string, args []cadence.Value) (*flow.Transaction
 		return nil, err
 	}
 
-	fmt.Printf("ID: %s", tx.ID())
+	fmt.Printf("--Transaction ID: %s", tx.ID())
 
 	txResult, err := WaitForSeal(ctx, flowClient, tx.ID())
 	if err != nil {
@@ -170,8 +171,8 @@ func CreateNftTemplate(template models.NFTTemplate) (*flow.TransactionResult, er
 	if err != nil {
 		return nil, err
 	}
-	if templateIsMinted == cadence.NewBool(false) {
-		return &flow.TransactionResult{}, nil
+	if templateIsMinted == cadence.NewBool(true) {
+		return nil, errors.New("template_is_minted")
 	}
 
 	args := []cadence.Value{
@@ -223,7 +224,6 @@ func WaitForSeal(ctx context.Context, c *client.Client, id flow.Identifier) (*fl
 
 	for result.Status != flow.TransactionStatusSealed {
 		time.Sleep(time.Second)
-		//fmt.Print(".")
 		result, err = c.GetTransactionResult(ctx, id)
 		if err != nil {
 			return nil, err
