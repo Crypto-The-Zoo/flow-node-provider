@@ -80,3 +80,6 @@ migrate.staging.up:
 	
 migrate.staging.down:
 	migrate -path $(MIGRATIONS_FOLDER) -database "$(STAGING_DATABASE_PROXY_URL)" down
+
+deploy.production:
+	gcloud beta run deploy api-production --set-env-vars='ENV=production' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging

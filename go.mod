@@ -11,6 +11,10 @@ require (
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
+	github.com/mailgun/mailgun-go/v4 v4.6.0
+	github.com/onflow/cadence v0.20.1
+	github.com/onflow/flow-go-sdk v0.24.0
+	google.golang.org/grpc v1.40.0
 )
 
 require (
@@ -37,12 +41,9 @@ require (
 	github.com/klauspost/compress v1.14.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/logrusorgru/aurora v0.0.0-20200102142835-e9ef32dff381 // indirect
-	github.com/mailgun/mailgun-go/v4 v4.6.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
 	github.com/onflow/atree v0.1.0-beta1.0.20211027184039-559ee654ece9 // indirect
-	github.com/onflow/cadence v0.20.1 // indirect
-	github.com/onflow/flow-go-sdk v0.24.0 // indirect
 	github.com/onflow/flow-go/crypto v0.21.3 // indirect
 	github.com/onflow/flow/protobuf/go/flow v0.2.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -59,7 +60,6 @@ require (
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20211007155348-82e027067bd4 // indirect
-	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
