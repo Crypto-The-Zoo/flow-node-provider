@@ -13,4 +13,8 @@ func FlowRoutes(a *fiber.App) {
 
 	route.Get("/flow/block", controllers.GetLatestBlock)
 
+	route.Post("/flow/template", controllers.CheckIfTemplateIsMinted)
+
+	// route.Post("/flow/nft-template", controllers.CreateNftTemplate)
+
 }
