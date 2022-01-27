@@ -21,7 +21,8 @@ func main() {
 		env = "development"
 	}
 	godotenv.Load(".env." + env)
-	fmt.Printf("--Env: %s", env)
+	fmt.Printf("-- Env: %s", env)
+	fmt.Printf("-- DB_SERVER_URL: %s", os.Getenv("DB_SERVER_URL"))
 
 	// Define Fiber config.
 	config := configs.FiberConfig()
