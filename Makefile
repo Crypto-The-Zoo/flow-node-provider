@@ -89,4 +89,4 @@ migrate.production.down:
 	migrate -path $(MIGRATIONS_FOLDER) -database "$(PRODUCTION_DATABASE_PROXY_URL)" down
 
 deploy.production:
-	gcloud beta run deploy api-production --set-env-vars='ENV=prod' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging
+	gcloud beta run deploy flow-node-api-production --set-env-vars='ENV=prod' --port=80 --project bionic-hallway-338400

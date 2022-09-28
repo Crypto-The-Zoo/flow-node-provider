@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"strings"
 
@@ -19,6 +20,15 @@ func ConnectToFlowAccessAPI() (*client.Client, error) {
 	flowAccessAPI := os.Getenv("FLOW_ACCESS_NODE")
 
 	flow, err := client.New(flowAccessAPI, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+
+	return flow, nil
+}
+
+func ConnectToFlowAccessAPIWithNode(node string) (*client.Client, error) {
+	flow, err := client.New(node, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +64,110 @@ func GetLatestBlock() (*models.Block, error) {
 	currentBlock.Timestamp = latestBlock.Timestamp
 
 	return currentBlock, nil
+}
+
+func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, endHeight uint64) ([]models.BlockEvents, error) {
+	nodeMap := map[string]map[string]interface{}{"16": {
+		"access":           "access-001.mainnet16.nodes.onflow.org:9000",
+		"startBlockHeight": uint64(23830813),
+		"endBlockHeight":   uint64(27341470 - 1),
+	},
+		"17": {
+			"access":           "access-001.mainnet17.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(27341470),
+			"endBlockHeight":   uint64(31735955 - 1),
+		},
+		"18": {
+			"access":           "access-001.mainnet18.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(31735955),
+			"endBlockHeight":   uint64(35858811 - 1),
+		},
+		"19": {
+			"access":           "access.mainnet.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(35858811),
+			"endBlockHeight":   math.Inf(1),
+		},
+	}
+
+	startNode := nodeBelongsTo(startHeight)
+	endNode := nodeBelongsTo(endHeight)
+
+	if startNode == endNode {
+		return GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, endHeight)
+	} else {
+		firstPart, _ := GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, nodeMap[startNode]["endBlockHeight"].(uint64))
+		secondPart, _ := GetEventsInBlockHeightRange(nodeMap[endNode]["access"].(string), eventType, nodeMap[endNode]["startBlockHeight"].(uint64), endHeight)
+
+		firstPart = append(firstPart, secondPart...)
+
+		return firstPart, nil
+	}
+}
+
+func nodeBelongsTo(height uint64) string {
+	if height >= 23830813 && height <= 27341470-1 {
+		return "16"
+	} else if height >= 27341470 && height <= 31735955-1 {
+		return "17"
+	} else if height >= 31735955 && height <= 35858811-1 {
+		return "18"
+	}
+
+	return "19"
+}
+
+func GetEventsInBlockHeightRange(node string, eventType string, startHeight uint64, endHeight uint64) ([]models.BlockEvents, error) {
+	blocks := []client.BlockEvents{}
+	blockEvents := []models.BlockEvents{}
+
+	ctx := context.Background()
+
+	flowClient, err := ConnectToFlowAccessAPIWithNode(node)
+	if err != nil {
+		return blockEvents, err
+	}
+
+	blocks, err = flowClient.GetEventsForHeightRange(ctx, client.EventRangeQuery{
+		Type:        eventType,
+		StartHeight: startHeight,
+		EndHeight:   endHeight,
+	})
+
+	if err != nil {
+		panic("failed to query events")
+	}
+
+	// TODO: serialize the payload
+	for _, s := range blocks {
+		for _, event := range s.Events {
+
+			// Prepare blockEventData
+			blockEventData := make(map[string]string)
+			eventFields := event.Value.EventType.Fields
+			eventValues := event.Value.Fields
+			for i, field := range eventFields {
+				blockEventData[field.Identifier] = eventValues[i].String()
+			}
+
+			blockEvents = append(blockEvents, models.BlockEvents{
+				ID:                s.BlockID.Hex(),
+				FlowTransactionID: event.TransactionID.Hex(),
+				BlockEventData:    blockEventData,
+				EventDate:         s.BlockTimestamp,
+
+				BlockID:          s.BlockID.Hex(),
+				BlockHeight:      s.Height,
+				BlockTimestamp:   s.BlockTimestamp,
+				Type:             event.Type,
+				TransactionID:    event.TransactionID.Hex(),
+				TransactionIndex: event.TransactionIndex,
+				EventIndex:       event.EventIndex,
+				Data:             blockEventData,
+			})
+		}
+	}
+
+	return blockEvents, nil
 }
 
 func MutateScriptAddress(script string) string {
