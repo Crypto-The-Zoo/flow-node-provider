@@ -213,7 +213,10 @@ func ServiceAccount(flowClient *client.Client) (flow.Address, *flow.AccountKey, 
 
 	// minterKeyIndex := int(os.Getenv("MINTER_KEY_INDEX"))
 	accountKey := acc.Keys[0]
-	signer := crypto.NewInMemorySigner(privateKey, accountKey.HashAlgo)
+	signer, err := crypto.NewInMemorySigner(privateKey, accountKey.HashAlgo)
+	if err != nil {
+		panic("NewInMemorySigner Error!")
+	}
 
 	return addr, accountKey, signer
 }
