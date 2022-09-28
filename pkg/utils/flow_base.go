@@ -116,6 +116,29 @@ func nodeBelongsTo(height uint64) string {
 	return "19"
 }
 
+func GetEventsInBlockHeightRangeRaw(node string, eventType string, startHeight uint64, endHeight uint64) ([]client.BlockEvents, error) {
+	blocks := []client.BlockEvents{}
+
+	ctx := context.Background()
+
+	flowClient, err := ConnectToFlowAccessAPIWithNode(node)
+	if err != nil {
+		return blocks, err
+	}
+
+	blocks, err = flowClient.GetEventsForHeightRange(ctx, client.EventRangeQuery{
+		Type:        eventType,
+		StartHeight: startHeight,
+		EndHeight:   endHeight,
+	})
+
+	if err != nil {
+		panic("failed to query events")
+	}
+
+	return blocks, nil
+}
+
 func GetEventsInBlockHeightRange(node string, eventType string, startHeight uint64, endHeight uint64) ([]models.BlockEvents, error) {
 	blocks := []client.BlockEvents{}
 	blockEvents := []models.BlockEvents{}
