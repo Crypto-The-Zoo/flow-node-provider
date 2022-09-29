@@ -19,7 +19,9 @@ import (
 func ConnectToFlowAccessAPI() (*client.Client, error) {
 	flowAccessAPI := os.Getenv("FLOW_ACCESS_NODE")
 
-	flow, err := client.New(flowAccessAPI, grpc.WithInsecure())
+	// 40 MB
+	flow, err := client.New(flowAccessAPI, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*1024)), grpc.WithInsecure())
+
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +30,9 @@ func ConnectToFlowAccessAPI() (*client.Client, error) {
 }
 
 func ConnectToFlowAccessAPIWithNode(node string) (*client.Client, error) {
-	flow, err := client.New(node, grpc.WithInsecure())
+
+	flow, err := client.New(node, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*1024)), grpc.WithInsecure())
+
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,12 @@ func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, e
 		return GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, endHeight)
 	} else {
 		firstPart, _ := GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, nodeMap[startNode]["endBlockHeight"].(uint64))
+
+		println(111)
+
 		secondPart, _ := GetEventsInBlockHeightRange(nodeMap[endNode]["access"].(string), eventType, nodeMap[endNode]["startBlockHeight"].(uint64), endHeight)
+
+		println(222)
 
 		firstPart = append(firstPart, secondPart...)
 
@@ -140,6 +149,7 @@ func GetEventsInBlockHeightRangeRaw(node string, eventType string, startHeight u
 }
 
 func GetEventsInBlockHeightRange(node string, eventType string, startHeight uint64, endHeight uint64) ([]models.BlockEvents, error) {
+
 	blocks := []client.BlockEvents{}
 	blockEvents := []models.BlockEvents{}
 
@@ -157,7 +167,7 @@ func GetEventsInBlockHeightRange(node string, eventType string, startHeight uint
 	})
 
 	if err != nil {
-		panic("failed to query events")
+		panic(err)
 	}
 
 	// TODO: serialize the payload
