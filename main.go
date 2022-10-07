@@ -36,7 +36,6 @@ func main() {
 	middleware.FiberMiddleware(app)
 
 	// Routes
-	routes.UserRoutes(app) // Register a route for user.
 	routes.FlowRoutes(app) // Register a route for flow.
 
 	err := app.Listen(":80")
