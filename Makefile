@@ -70,8 +70,8 @@ docker.stop.postgres:
 swag:
 	swag init
 
-deploy.staging:
-	gcloud beta run deploy api-staging --set-env-vars='ENV=staging' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging
+# deploy.staging:
+# 	gcloud beta run deploy api-staging --set-env-vars='ENV=staging' --port=80 --add-cloudsql-instances=crypto-the-zoo-staging:us-west1:inception-db --project crypto-the-zoo-staging
 
 db.socket:
 	./bin/cloud_sql_proxy -instances=crypto-the-zoo-staging:us-west1:inception-db=tcp:5544
@@ -88,5 +88,8 @@ migrate.production.up:
 migrate.production.down:
 	migrate -path $(MIGRATIONS_FOLDER) -database "$(PRODUCTION_DATABASE_PROXY_URL)" down
 
+deploy.staging:
+	gcloud beta run deploy flow-node-api-staging --set-env-vars='ENV=staging' --port=80 --project zeero-marketplace-staging
+
 deploy.production:
-	gcloud beta run deploy flow-node-api-production --set-env-vars='ENV=prod' --port=80 --project bionic-hallway-338400
+	gcloud beta run deploy flow-node-api-production --set-env-vars='ENV=prod' --port=80 --project zeero-marketplace

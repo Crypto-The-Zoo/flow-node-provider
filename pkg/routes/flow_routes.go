@@ -11,8 +11,6 @@ func FlowRoutes(a *fiber.App) {
 	// Create routes group.
 	route := a.Group("/api/v1")
 
-	route.Get("/flow/block", controllers.GetLatestBlock)
-
 	route.Post("/flow/block-events", controllers.GetEventsInBlockRange)
 	route.Post("/flow/block-events-raw", controllers.GetEventsInBlockRangeRaw)
 	// route.Post("/flow/template", middleware.JWTProtected(), controllers.CheckIfTemplateIsMinted)

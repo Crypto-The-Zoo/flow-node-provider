@@ -3,8 +3,6 @@ package utils
 import (
 	"InceptionAnimals/app/models"
 	"context"
-	"fmt"
-	"io/ioutil"
 	"math"
 	"os"
 	"strings"
@@ -16,18 +14,18 @@ import (
 	"google.golang.org/grpc"
 )
 
-func ConnectToFlowAccessAPI() (*client.Client, error) {
-	flowAccessAPI := os.Getenv("FLOW_ACCESS_NODE")
+// func ConnectToFlowAccessAPI() (*client.Client, error) {
+// 	flowAccessAPI := os.Getenv("FLOW_ACCESS_NODE")
 
-	// 40 MB
-	flow, err := client.New(flowAccessAPI, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*1024)), grpc.WithInsecure())
+// 	// 40 MB
+// 	flow, err := client.New(flowAccessAPI, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*1024)), grpc.WithInsecure())
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return flow, nil
-}
+// 	return flow, nil
+// }
 
 func ConnectToFlowAccessAPIWithNode(node string) (*client.Client, error) {
 
@@ -46,31 +44,37 @@ func GetReferenceBlockId(flowClient *client.Client) flow.Identifier {
 	return block.ID
 }
 
-func GetLatestBlock() (*models.Block, error) {
-	currentBlock := &models.Block{}
+// func GetLatestBlock() (*models.Block, error) {
+// 	currentBlock := &models.Block{}
 
-	ctx := context.Background()
+// 	ctx := context.Background()
 
-	flowClient, err := ConnectToFlowAccessAPI()
-	if err != nil {
-		return currentBlock, err
-	}
+// 	flowClient, err := ConnectToFlowAccessAPI()
+// 	if err != nil {
+// 		return currentBlock, err
+// 	}
 
-	// get the latest sealed block
-	isSealed := true
-	latestBlock, err := flowClient.GetLatestBlock(ctx, isSealed)
-	if err != nil {
-		return currentBlock, err
-	}
+// 	// get the latest sealed block
+// 	isSealed := true
+// 	latestBlock, err := flowClient.GetLatestBlock(ctx, isSealed)
+// 	if err != nil {
+// 		return currentBlock, err
+// 	}
 
-	currentBlock.ID = fmt.Sprintf("ID: %s", latestBlock.ID)
-	currentBlock.Height = fmt.Sprintf("%d", latestBlock.Height)
-	currentBlock.Timestamp = latestBlock.Timestamp
+// 	currentBlock.ID = fmt.Sprintf("ID: %s", latestBlock.ID)
+// 	currentBlock.Height = fmt.Sprintf("%d", latestBlock.Height)
+// 	currentBlock.Timestamp = latestBlock.Timestamp
 
-	return currentBlock, nil
-}
+// 	return currentBlock, nil
+// }
 
 func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, endHeight uint64) ([]models.BlockEvents, error) {
+	current_env := os.Getenv("ENV")
+
+	if current_env != "prod" {
+		return GetEventsInBlockHeightRange("access.devnet.nodes.onflow.org:9000", eventType, startHeight, endHeight)
+	}
+	
 	nodeMap := map[string]map[string]interface{}{"16": {
 		"access":           "access-001.mainnet16.nodes.onflow.org:9000",
 		"startBlockHeight": uint64(23830813),
@@ -100,15 +104,8 @@ func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, e
 		return GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, endHeight)
 	} else {
 		firstPart, _ := GetEventsInBlockHeightRange(nodeMap[startNode]["access"].(string), eventType, startHeight, nodeMap[startNode]["endBlockHeight"].(uint64))
-
-		println(111)
-
 		secondPart, _ := GetEventsInBlockHeightRange(nodeMap[endNode]["access"].(string), eventType, nodeMap[endNode]["startBlockHeight"].(uint64), endHeight)
-
-		println(222)
-
 		firstPart = append(firstPart, secondPart...)
-
 		return firstPart, nil
 	}
 }
@@ -121,7 +118,6 @@ func nodeBelongsTo(height uint64) string {
 	} else if height >= 31735955 && height <= 35858811-1 {
 		return "18"
 	}
-
 	return "19"
 }
 
@@ -229,91 +225,4 @@ func ServiceAccount(flowClient *client.Client) (flow.Address, *flow.AccountKey, 
 	}
 
 	return addr, accountKey, signer
-}
-
-func ExecuteScript(scriptName string, args []cadence.Value) (cadence.Value, error) {
-	ctx := context.Background()
-
-	flowClient, err := ConnectToFlowAccessAPI()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := flowClient.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	script, err := ioutil.ReadFile("cadence/scripts/CryptoZoo/" + scriptName + ".cdc")
-	if err != nil {
-		return nil, err
-	}
-
-	scriptStr := MutateScriptAddress(string(script))
-
-	value, err := flowClient.ExecuteScriptAtLatestBlock(ctx, []byte(scriptStr), args)
-	if err != nil {
-		return nil, err
-	}
-
-	return value, nil
-}
-
-func sendTransaction(scriptName string, args []cadence.Value) (*flow.TransactionResult, error) {
-	ctx := context.Background()
-
-	// Initialize Flow Client
-	flowClient, err := ConnectToFlowAccessAPI()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		err := flowClient.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	// Parse transaction script
-	script, err := ioutil.ReadFile("cadence/transactions/CryptoZoo/" + scriptName + ".cdc")
-	if err != nil {
-		return nil, err
-	}
-	scriptStr := MutateScriptAddress(string(script))
-
-	// Get service account
-	serviceAcctAddr, serviceAcctKey, serviceSigner := ServiceAccount(flowClient)
-
-	// Build and sign transaction
-	tx := flow.NewTransaction().
-		SetPayer(serviceAcctAddr).
-		SetProposalKey(serviceAcctAddr, serviceAcctKey.Index, serviceAcctKey.SequenceNumber).
-		SetScript([]byte(scriptStr)).
-		SetReferenceBlockID(GetReferenceBlockId(flowClient)).
-		AddAuthorizer(serviceAcctAddr)
-
-	for _, argument := range args {
-		tx.AddArgument(argument)
-	}
-
-	err = tx.SignEnvelope(serviceAcctAddr, serviceAcctKey.Index, serviceSigner)
-	if err != nil {
-		return nil, err
-	}
-
-	// Send transaction
-	err = flowClient.SendTransaction(ctx, *tx)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("--Transaction ID: %s", tx.ID())
-
-	txResult, err := WaitForSeal(ctx, flowClient, tx.ID())
-	if err != nil {
-		return nil, err
-	}
-
-	return txResult, nil
 }
