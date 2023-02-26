@@ -74,12 +74,63 @@ func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, e
 	if current_env != "prod" {
 		return GetEventsInBlockHeightRange("access.devnet.nodes.onflow.org:9000", eventType, startHeight, endHeight)
 	}
-	
-	nodeMap := map[string]map[string]interface{}{"16": {
-		"access":           "access-001.mainnet16.nodes.onflow.org:9000",
-		"startBlockHeight": uint64(23830813),
-		"endBlockHeight":   uint64(27341470 - 1),
-	},
+
+	nodeMap := map[string]map[string]interface{}{
+		"6": {
+			"access":           "access-001.mainnet6.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(12609237),
+			"endBlockHeight":   uint64(13404174 - 1),
+		},
+		"7": {
+			"access":           "access-001.mainnet7.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(13404174),
+			"endBlockHeight":   uint64(13950742 - 1),
+		},
+		"8": {
+			"access":           "access-001.mainnet8.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(13950742),
+			"endBlockHeight":   uint64(14892104 - 1),
+		},
+		"9": {
+			"access":           "access-001.mainnet9.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(14892104),
+			"endBlockHeight":   uint64(15791891 - 1),
+		},
+		"10": {
+			"access":           "access-001.mainnet10.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(15791891),
+			"endBlockHeight":   uint64(16755602 - 1),
+		},
+		"11": {
+			"access":           "access-001.mainnet11.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(16755602),
+			"endBlockHeight":   uint64(17544523 - 1),
+		},
+		"12": {
+			"access":           "access-001.mainnet12.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(17544523),
+			"endBlockHeight":   uint64(18587478 - 1),
+		},
+		"13": {
+			"access":           "access-001.mainnet13.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(18587478),
+			"endBlockHeight":   uint64(19050753 - 1),
+		},
+		"14": {
+			"access":           "access-001.mainnet14.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(19050753),
+			"endBlockHeight":   uint64(21291692 - 1),
+		},
+		"15": {
+			"access":           "access-001.mainnet15.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(21291692),
+			"endBlockHeight":   uint64(23830813 - 1),
+		},
+		"16": {
+			"access":           "access-001.mainnet16.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(23830813),
+			"endBlockHeight":   uint64(27341470 - 1),
+		},
 		"17": {
 			"access":           "access-001.mainnet17.nodes.onflow.org:9000",
 			"startBlockHeight": uint64(27341470),
@@ -91,8 +142,23 @@ func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, e
 			"endBlockHeight":   uint64(35858811 - 1),
 		},
 		"19": {
-			"access":           "access.mainnet.nodes.onflow.org:9000",
+			"access":           "access-001.mainnet19.nodes.onflow.org:9000",
 			"startBlockHeight": uint64(35858811),
+			"endBlockHeight":   uint64(40171634 - 1),
+		},
+		"20": {
+			"access":           "access-001.mainnet20.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(40171634),
+			"endBlockHeight":   uint64(44950207 - 1),
+		},
+		"21": {
+			"access":           "access-001.mainnet21.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(44950207),
+			"endBlockHeight":   uint64(47169687 - 1),
+		},
+		"22": {
+			"access":           "access.mainnet.nodes.onflow.org:9000",
+			"startBlockHeight": uint64(47169687),
 			"endBlockHeight":   math.Inf(1),
 		},
 	}
@@ -111,14 +177,58 @@ func GetEventsInBlockHeightRangeAutoNode(eventType string, startHeight uint64, e
 }
 
 func nodeBelongsTo(height uint64) string {
-	if height >= 23830813 && height <= 27341470-1 {
-		return "16"
-	} else if height >= 27341470 && height <= 31735955-1 {
-		return "17"
-	} else if height >= 31735955 && height <= 35858811-1 {
+	if height >= 47169687 {
+		return "22"
+	}
+	if height >= 44950207 {
+		return "21"
+	}
+	if height >= 40171634 {
+		return "20"
+	}
+	if height >= 35858811 {
+		return "19"
+	}
+	if height >= 31735955 {
 		return "18"
 	}
-	return "19"
+	if height >= 27341470 {
+		return "17"
+	}
+	if height >= 23830813 {
+		return "16"
+	}
+	if height >= 21291692 {
+		return "15"
+	}
+	if height >= 19050753 {
+		return "14"
+	}
+	if height >= 18587478 {
+		return "13"
+	}
+	if height >= 17544523 {
+		return "12"
+	}
+	if height >= 16755602 {
+		return "11"
+	}
+	if height >= 15791891 {
+		return "10"
+	}
+	if height >= 14892104 {
+		return "9"
+	}
+	if height >= 13950742 {
+		return "8"
+	}
+	if height >= 13404174 {
+		return "7"
+	}
+	if height >= 12609237 {
+		return "6"
+	}
+	return "UNKNOWN"
 }
 
 func GetEventsInBlockHeightRangeRaw(node string, eventType string, startHeight uint64, endHeight uint64) ([]client.BlockEvents, error) {

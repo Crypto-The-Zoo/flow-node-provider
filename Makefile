@@ -91,5 +91,8 @@ migrate.production.down:
 deploy.staging:
 	gcloud beta run deploy flow-node-api-staging --set-env-vars='ENV=staging' --port=80 --project zeero-marketplace-staging
 
+deploy.llama:
+	gcloud beta run deploy flow-node-api-production --set-env-vars='ENV=prod' --port=80 --project zeero-marketplace-llama
+
 deploy.production:
 	gcloud beta run deploy flow-node-api-production --set-env-vars='ENV=prod' --port=80 --project zeero-marketplace
